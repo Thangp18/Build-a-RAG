@@ -9,7 +9,7 @@ env/
 
 # Databases & Vector Stores
 milvus_db/
-chromadb/
+
 
 # Python Cache
 __pycache__/

@@ -1,46 +1,44 @@
 from langchain.tools import tool
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate,MessagesPlaceholder
-from langchain_milvus import Milvus
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_agent
 from dotenv import load_dotenv
-import os 
+import os
+
 load_dotenv(override=True)
 
-if not os.path.exists("./milvus_db"):
-    os.makedirs("./milvus_db", exist_ok=True)
-DB_NAME = "./milvus_db/milvus.db"
-EMBEDDING_MODEL= HuggingFaceEmbeddings(model= "AITeamVN/Vietnamese_Embedding")
-vectorstore = Milvus(
-    embedding_function=EMBEDDING_MODEL,
-    connection_args={"uri": DB_NAME},
-    collection_name="vietnamese_rag"
+# Khởi tạo mô hình ngôn ngữ
+model = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash-lite",
+    verbose=True,
+    temperature=0.7,
+    google_api_key=os.getenv("GOOGLE_API_KEY"),
+    streaming=True
 )
-model= ChatGoogleGenerativeAI(
-    model= "gemini-2.5-flash-lite",
-    verbose= True,
-    temperature= 0.7,
-    google_api_key= os.getenv("GOOGLE_API_KEY"),
-    streaming= True
-    )
 
-@tool(response_format="content_and_artifact")
-def retrieve_context(query):
-    retrieved_docs = vectorstore.similarity_search(query, k=3)
-    serialized = "\n\n".join(
-        (f"Source: {doc.metadata}\nContent: {doc.page_content}")
-        for doc in retrieved_docs
-    )
-    return serialized
 
-def agent():
+def create_agent_with_retriever(ensemble_retriever):
+    """
+    Nhận ensemble_retriever đã được tạo sẵn từ ingest_local hoặc ingest_url,
+    không cần khởi tạo lại vectorstore hay BM25 ở đây.
+    """
+
+    @tool(response_format="content_and_artifact")
+    def retrieve_context(query: str):
+        """Truy xuất ngữ cảnh liên quan từ tài liệu đã được lưu trữ."""
+        retrieved_docs = ensemble_retriever.invoke(query)
+        serialized = "\n\n".join(
+            (f"Source: {doc.metadata}\nContent: {doc.page_content}")
+            for doc in retrieved_docs
+        )
+        return serialized, retrieved_docs
+
     tools = [retrieve_context]
     system_prompt = (
         "Bạn là trợ lý AI chuyên sâu về các bài viết. "
         "Sử dụng công cụ 'retrieve_context' để truy xuất ngữ cảnh từ các bài viết. "
         "Trả lời câu hỏi của người dùng dựa trên thông tin được truy xuất. "
-        "Nếu ngữ cảnh không chứa thông tin liên quan, hãy trả lời: 'Tôi không tìm thấy thông tin liên quan trong các bài viết. ' "
+        "Nếu ngữ cảnh không chứa thông tin liên quan, hãy trả lời: 'Tôi không tìm thấy thông tin liên quan trong các bài viết.' "
         "Không tự bịa đặt thông tin. Hãy trả lời bằng Tiếng Việt."
     )
     prompt = ChatPromptTemplate.from_messages([
@@ -49,5 +47,5 @@ def agent():
         ("human", "{input}"),
         MessagesPlaceholder(variable_name="agent_scratchpad"),
     ])
-    agent = create_agent(model, tools, system_prompt=prompt)
-    return agent
+    agent_executor = create_agent(model, tools, system_prompt=prompt)
+    return agent_executor

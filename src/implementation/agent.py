@@ -18,11 +18,6 @@ model = ChatGoogleGenerativeAI(
 
 
 def create_agent_with_retriever(ensemble_retriever):
-    """
-    Nhận ensemble_retriever đã được tạo sẵn từ ingest_local hoặc ingest_url,
-    không cần khởi tạo lại vectorstore hay BM25 ở đây.
-    """
-
     @tool(response_format="content_and_artifact")
     def retrieve_context(query: str):
         """Truy xuất ngữ cảnh liên quan từ tài liệu đã được lưu trữ."""

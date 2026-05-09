@@ -35,8 +35,7 @@ BuildRAG/
 │   │   ├── agent.py          # Khởi tạo ReAct Agent và Tool (retrieve_context)
 │   │   ├── ingest_local.py   # Xử lý dữ liệu từ file cục bộ
 │   │   └── ingest_url.py     # Xử lý dữ liệu từ URL web
-│   └── main.py               # Giao diện chính của ứng dụng Streamlit
-├── data/                     # Thư mục lưu trữ tạm thời các file được tải lên
+│   └── main.py               # Giao diện chính của ứng dụng
 ├── chroma_db/                # Cơ sở dữ liệu Vector cục bộ
 ├── .env                      # File chứa biến môi trường (API Key)
 ├── requirements.txt          # Danh sách thư viện cần thiết

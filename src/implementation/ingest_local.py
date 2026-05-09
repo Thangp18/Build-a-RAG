@@ -16,17 +16,15 @@ CHROMA_DIR = "./chroma_db"
 
 EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
 
-def load_docs():
-    #Load dữ liệu:
-    loader = DirectoryLoader(
-        path=DATA_PATH,
-        glob="**/*",
-        loader_cls=UnstructuredFileLoader,
-        loader_kwargs={"strategy": "fast"},
-        show_progress=True,
-        use_multithreading=True
-    )
-    docs = loader.load()
+def load_docs(file_paths):
+    # Load dữ liệu từ các file cụ thể được truyền vào (từ main.py):
+    docs = []
+    for path in file_paths:
+        loader = UnstructuredFileLoader(
+            file_path=path,
+            strategy="fast",
+        )
+        docs.extend(loader.load())
     
     # Lọc bỏ các document rỗng để tránh lỗi
     valid_docs = [doc for doc in docs if doc.page_content.strip()]

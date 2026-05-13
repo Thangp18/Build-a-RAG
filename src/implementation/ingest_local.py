@@ -16,7 +16,6 @@ CHROMA_DIR = "./chroma_db"
 EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
 
 def load_docs(file_paths):
-    # Load dữ liệu từ các file cụ thể được truyền vào (từ main.py):
     docs = []
     for path in file_paths:
         loader = UnstructuredFileLoader(

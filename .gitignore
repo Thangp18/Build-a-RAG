@@ -8,7 +8,7 @@ env/
 .env
 
 # Databases & Vector Stores
-milvus_db/
+chroma_db/
 
 
 # Python Cache

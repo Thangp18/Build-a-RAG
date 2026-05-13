@@ -1,6 +1,6 @@
 import os 
 from dotenv import load_dotenv
-from langchain_community.document_loaders import DirectoryLoader, UnstructuredFileLoader
+from langchain_community.document_loaders import DirectoryLoader, UnstructuredFileLoader, PyPDFLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_classic.retrievers import EnsembleRetriever
@@ -18,11 +18,25 @@ EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
 def load_docs(file_paths):
     docs = []
     for path in file_paths:
-        loader = UnstructuredFileLoader(
-            file_path=path,
-            strategy="fast",
-        )
-        docs.extend(loader.load())
+        ext = os.path.splitext(path)[-1].lower()
+        try:
+            if ext == ".pdf":
+                # Sử dụng PyPDFLoader thuần Python ổn định hơn trên Windows cho file PDF
+                loader = PyPDFLoader(file_path=path)
+            else:
+                loader = UnstructuredFileLoader(
+                    file_path=path,
+                    strategy="fast",
+                )
+            docs.extend(loader.load())
+        except Exception as e:
+            print(f"Lỗi khi load file {path}: {e}")
+            # Fallback nếu PyPDFLoader lỗi: Thử lại bằng Unstructured
+            try:
+                loader = UnstructuredFileLoader(file_path=path)
+                docs.extend(loader.load())
+            except:
+                pass
     
     # Lọc bỏ các document rỗng để tránh lỗi
     valid_docs = [doc for doc in docs if doc.page_content.strip()]

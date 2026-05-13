@@ -6,8 +6,8 @@ from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers import EnsembleRetriever
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import FlashrankRerank
+from langchain_classic.retrievers import ContextualCompressionRetriever
+from langchain_classic.retrievers.document_compressors import FlashrankRerank
 from dotenv import load_dotenv
 import os
 
@@ -54,7 +54,7 @@ def setup_tools():
     )
 
     #Rerank
-    reranker = FlashrankRerank(top_k=5)
+    reranker = FlashrankRerank(top_n=5)
 
     #Kết hợp Base Retriever + Reranker
     rerank_retriever = ContextualCompressionRetriever(

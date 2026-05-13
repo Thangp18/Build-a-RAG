@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from src.api.routers import chat, ingest
 import logging
+import sys
 
 # Thiết lập logging 
 logging.basicConfig(

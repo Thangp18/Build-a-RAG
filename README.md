@@ -1,44 +1,133 @@
-# 🤖 Build-a-RAG (Vietnamese RAG Agent)
+# 🤖 Build-a-RAG
 
-Dự án này là một ứng dụng **RAG (Retrieval-Augmented Generation)** tiên tiến, được xây dựng bằng Python và Streamlit, kết hợp sức mạnh của tác tử AI (AI Agent) thông qua LangChain và LangGraph để trả lời các câu hỏi dựa trên kho dữ liệu do người dùng cung cấp. Hệ thống được tối ưu đặc biệt cho tiếng Việt.
+> **Hệ thống RAG (Retrieval-Augmented Generation) tiên tiến với kiến trúc Microservices, được tối ưu cho Tiếng Việt.**
+
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B?logo=streamlit)](https://streamlit.io/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-ReAct_Agent-blueviolet)](https://langchain-ai.github.io/langgraph/)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-orange)](https://www.trychroma.com/)
+
+---
+
+## 📋 Mục lục
+
+- [Giới thiệu](#-giới-thiệu)
+- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
+- [Tính năng nổi bật](#-tính-năng-nổi-bật)
+- [Công nghệ sử dụng](#️-công-nghệ-sử-dụng)
+- [Cấu trúc dự án](#-cấu-trúc-dự-án)
+- [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
+- [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)
+- [API Reference](#-api-reference)
+
+---
+
+## 🎯 Giới thiệu
+
+**Build-a-RAG** là một ứng dụng hỏi-đáp thông minh, cho phép người dùng **nạp bất kỳ tài liệu nào** (file PDF, Word, TXT hoặc URL web) và đặt câu hỏi bằng **Tiếng Việt** — hệ thống sẽ trích xuất và trả lời chính xác dựa trên nội dung của tài liệu đó.
+
+Dự án áp dụng kiến trúc **Microservices** tiêu chuẩn ngành: phân tách hoàn toàn Backend (FastAPI) khỏi Frontend (Streamlit), giao tiếp qua REST API với **Streaming Response** thời gian thực.
+
+---
+
+## 🏗️ Kiến trúc hệ thống
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FRONTEND (Streamlit UI)                       │
+│              src/main.py  ·  Port 8501                          │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │  REST API (HTTP)
+                           │  ├── POST /chat         (Streaming)
+                           │  ├── POST /ingest/url
+                           │  └── POST /ingest/local
+┌──────────────────────────▼──────────────────────────────────────┐
+│                    BACKEND (FastAPI)                             │
+│              src/api/main.py  ·  Port 8000                      │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Routers (src/api/routers/)                  │   │
+│  │   chat.py ── ingest.py                                   │   │
+│  └────────────────────┬────────────────────────────────────┘   │
+│                        │                                         │
+│  ┌─────────────────────▼────────────────────────────────────┐  │
+│  │           Implementation (src/implementation/)            │  │
+│  │  ┌──────────────┐  ┌────────────────┐  ┌─────────────┐  │  │
+│  │  │  ingest_url  │  │  ingest_local  │  │    agent    │  │  │
+│  │  │   (WebURL)   │  │   (File/PDF)   │  │ (ReAct+RAG) │  │  │
+│  │  └──────────────┘  └────────────────┘  └──────┬──────┘  │  │
+│  └────────────────────────────────────────────────│─────────┘  │
+└───────────────────────────────────────────────────│─────────────┘
+                                                    │
+              ┌─────────────────────────────────────▼──────┐
+              │              ChromaDB (Vector Store)        │
+              │              + BM25 (Sparse Retriever)      │
+              │           Hybrid Ensemble Retriever         │
+              └─────────────────────────────────────────────┘
+```
 
 ---
 
 ## ✨ Tính năng nổi bật
 
-- 🌐 **Thu thập dữ liệu từ URL**: Tự động trích xuất nội dung từ các trang web (Web Scraping).
-- 📁 **Hỗ trợ tải tệp tin cục bộ**: Đọc dữ liệu từ file trên máy tính (hỗ trợ PDF, TXT, DOCX,...) với thuật toán nhận diện nhanh (`unstructured`).
-- 🧠 **Cắt câu theo ngữ nghĩa (Semantic Chunking)**: Chia nhỏ tài liệu dựa trên ngữ cảnh để giữ trọn vẹn ý nghĩa của đoạn văn thay vì cắt mù quáng theo độ dài.
-- 🔍 **Tìm kiếm lai (Hybrid Search / Ensemble Retriever)**: Kết hợp tìm kiếm theo vector (ChromaDB) và tìm kiếm từ khóa (BM25) để mang lại kết quả truy xuất chính xác nhất.
-- 🤖 **ReAct AI Agent**: Ứng dụng không chỉ đơn thuần gọi LLM, mà sử dụng kiến trúc AI Agent (LangGraph) với bộ công cụ `retrieve_context`. Agent có khả năng tự suy luận và tự quyết định lúc nào cần dùng công cụ tìm kiếm trong tài liệu để trả lời người dùng.
-- 💬 **Giao diện Chat trực quan**: Giao diện hội thoại Streamlit hiện đại, lưu trữ lịch sử trò chuyện.
+| Tính năng | Mô tả |
+|---|---|
+| 🌐 **Thu thập từ URL** | Tự động scrape và xử lý nội dung từ trang web bất kỳ |
+| 📁 **Upload tài liệu** | Hỗ trợ PDF, DOCX, TXT, PPTX, XLSX và nhiều định dạng khác |
+| 🧠 **Semantic Chunking** | Cắt tài liệu theo ngữ nghĩa, giữ nguyên ngữ cảnh thay vì cắt theo độ dài |
+| 🔍 **Hybrid Search** | Kết hợp Vector Search (ChromaDB) + Keyword Search (BM25) để tối ưu độ chính xác |
+| 🤖 **ReAct AI Agent** | Agent tự suy luận (LangGraph) quyết định khi nào cần tìm kiếm tài liệu |
+| ⚡ **Streaming Response** | Câu trả lời xuất hiện token-by-token theo thời gian thực |
+| 🔌 **REST API chuẩn** | FastAPI backend với Swagger UI tự động tại `/docs` |
+| 🇻🇳 **Tiếng Việt tối ưu** | Sử dụng model embedding `AITeamVN/Vietnamese_Embedding` chuyên biệt |
 
 ---
 
 ## 🛠️ Công nghệ sử dụng
 
-- **Frontend**: [Streamlit](https://streamlit.io/)
-- **Orchestration**: [LangChain](https://www.langchain.com/), [LangGraph](https://langchain-ai.github.io/langgraph/)
-- **LLM**: Google Gemini (`gemini-2.5-flash-lite`) thông qua `langchain-google-genai`
-- **Embeddings**: `AITeamVN/Vietnamese_Embedding` (HuggingFace)
-- **Vector Database**: [ChromaDB](https://www.trychroma.com/)
-- **Sparse Retriever**: `rank_bm25`
+### Backend
+| Thành phần | Công nghệ |
+|---|---|
+| **API Framework** | [FastAPI](https://fastapi.tiangolo.com/) |
+| **AI Orchestration** | [LangChain](https://www.langchain.com/) + [LangGraph](https://langchain-ai.github.io/langgraph/) |
+| **LLM** | Google Gemini (`gemini-2.5-flash-lite`) |
+| **Embeddings** | `AITeamVN/Vietnamese_Embedding` (HuggingFace) |
+| **Vector Database** | [ChromaDB](https://www.trychroma.com/) |
+| **Sparse Retrieval** | BM25 (`rank_bm25`) |
+| **Document Parsing** | [Unstructured](https://unstructured.io/), PyPDF, python-docx |
+
+### Frontend
+| Thành phần | Công nghệ |
+|---|---|
+| **UI Framework** | [Streamlit](https://streamlit.io/) |
+| **HTTP Client** | `requests` (với streaming support) |
 
 ---
 
 ## 📂 Cấu trúc dự án
 
-```text
+```
 BuildRAG/
 ├── src/
-│   ├── implementation/
-│   │   ├── agent.py          # Khởi tạo ReAct Agent và Tool (retrieve_context)
-│   │   ├── ingest_local.py   # Xử lý dữ liệu từ file cục bộ
-│   │   └── ingest_url.py     # Xử lý dữ liệu từ URL web
-│   └── main.py               # Giao diện chính của ứng dụng Streamlit
-├── chroma_db/                # Cơ sở dữ liệu Vector cục bộ
-├── .env                      # File chứa biến môi trường (API Key)
-├── requirements.txt          # Danh sách thư viện cần thiết
+│   ├── api/                        # 🔌 Backend FastAPI
+│   │   ├── main.py                 # Entry point, đăng ký routers
+│   │   ├── schemas.py              # Pydantic models (Request/Response)
+│   │   ├── agent_state.py          # Quản lý vòng đời Agent (singleton cache)
+│   │   └── routers/
+│   │       ├── chat.py             # POST /chat (Streaming Response)
+│   │       └── ingest.py           # POST /ingest/url | /ingest/local
+│   │
+│   ├── implementation/             # ⚙️ Core Logic
+│   │   ├── agent.py                # ReAct Agent + Hybrid Retriever Tool
+│   │   ├── ingest_url.py           # Pipeline: URL → Chunks → ChromaDB
+│   │   └── ingest_local.py         # Pipeline: File → Chunks → ChromaDB
+│   │
+│   └── main.py                     # 🖥️ Frontend Streamlit UI
+│
+├── chroma_db/                      # Vector database (tự tạo khi chạy)
+├── data/                           # Thư mục chứa file tải lên (tự tạo)
+├── .env                            # Biến môi trường (API Keys)
+├── requirements.txt
 └── README.md
 ```
 
@@ -46,61 +135,145 @@ BuildRAG/
 
 ## 🚀 Hướng dẫn cài đặt
 
-### 1. Yêu cầu hệ thống
-- Python 3.9 trở lên
-- Git
+### Yêu cầu hệ thống
+- **Python** 3.9 trở lên
+- **Git**
 
-### 2. Cài đặt chi tiết
+### Bước 1: Clone dự án
 
-Đầu tiên, clone dự án về máy:
 ```bash
 git clone https://github.com/Thangp18/Build-a-RAG.git
 cd Build-a-RAG
 ```
 
-Tạo môi trường ảo (Virtual Environment) và kích hoạt nó:
+### Bước 2: Tạo và kích hoạt môi trường ảo
+
 ```bash
-# Đối với Windows
+# Windows
 python -m venv .venv
 .\.venv\Scripts\activate
 
-# Đối với macOS/Linux
+# macOS / Linux
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Cài đặt các thư viện phụ thuộc:
+### Bước 3: Cài đặt dependencies
+
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
-pip install rank_bm25 "unstructured[pdf]" unstructured-inference
+pip install "fastapi[standard]" rank_bm25
 ```
 
-### 3. Cấu hình biến môi trường
-Tạo một file `.env` ở thư mục gốc của dự án và điền Google API Key của bạn vào:
+### Bước 4: Cấu hình API Key
+
+Tạo file `.env` tại thư mục gốc và điền Google Gemini API Key:
+
 ```env
-GOOGLE_API_KEY="AIzaSyYour-Google-Gemini-API-Key-Here"
+GOOGLE_API_KEY="AIzaSy-Your-API-Key-Here"
 ```
-*(Nếu chưa có API Key, bạn có thể tạo miễn phí tại [Google AI Studio](https://aistudio.google.com/)).*
+
+> 💡 Tạo API Key miễn phí tại [Google AI Studio](https://aistudio.google.com/).
 
 ---
 
 ## 💻 Hướng dẫn sử dụng
 
-Khởi chạy ứng dụng Streamlit bằng lệnh sau:
+Dự án cần chạy **2 server song song** — Backend API và Frontend UI.
+
+### Terminal 1 — Khởi động Backend API
+
+```bash
+uvicorn src.api.main:app --reload
+```
+
+Backend sẽ chạy tại `http://127.0.0.1:8000`.  
+Truy cập `http://127.0.0.1:8000/docs` để xem Swagger UI đầy đủ.
+
+### Terminal 2 — Khởi động Frontend UI
+
 ```bash
 streamlit run src/main.py
 ```
 
-Trình duyệt sẽ tự động mở tại địa chỉ `http://localhost:8501`. Tại đây bạn có thể:
-1. Nhập danh sách URL (ngăn cách bằng dấu phẩy) hoặc tải lên file dữ liệu (PDF, Word, TXT,...).
-2. Nhấn nút **"Bắt đầu xử lý"** để hệ thống nhúng (embed) dữ liệu vào bộ nhớ.
-3. Bắt đầu chat với AI ở khung bên phải để hỏi các thông tin liên quan đến tài liệu vừa nạp. Hệ thống sẽ trích xuất và giải đáp thắc mắc bằng Tiếng Việt dựa trên nội dung gốc.
+Frontend sẽ chạy tại `http://localhost:8501`.
+
+### Luồng sử dụng
+
+1. **Nạp dữ liệu** (sidebar bên trái):
+   - Chọn nguồn dữ liệu: URL hoặc File từ thiết bị
+   - Nhập URL hoặc tải lên file và nhấn **"Bắt đầu xử lý"**
+   - Hệ thống sẽ parse, chunk, embed và lưu vào ChromaDB
+
+2. **Hỏi đáp** (khung chat chính):
+   - Nhập câu hỏi bằng Tiếng Việt
+   - AI Agent sẽ tự động tìm kiếm trong tài liệu và phản hồi theo thời gian thực
+
+---
+
+## 📡 API Reference
+
+### `POST /chat`
+Gửi câu hỏi cho AI Agent, nhận phản hồi dạng **Streaming**.
+
+```json
+// Request Body
+{
+  "messages": "Tóm tắt nội dung tài liệu cho tôi?",
+  "session_id": "session_1"
+}
+```
+
+```
+// Response: text/plain (streamed tokens)
+"Dựa trên tài liệu đã nạp, nội dung chính..."
+```
+
+---
+
+### `POST /ingest/url`
+Nạp dữ liệu từ danh sách URL.
+
+```json
+// Request Body
+{
+  "urls": ["https://example.com/article", "https://example.com/docs"]
+}
+```
+
+```json
+// Response
+{
+  "status": "success",
+  "message": "Xử lý thành công ['https://example.com/...'] URLs"
+}
+```
+
+---
+
+### `POST /ingest/local`
+Nạp dữ liệu từ file tải lên (multipart/form-data).
+
+```
+// Form Data
+files: [file1.pdf, file2.docx, ...]
+```
+
+```json
+// Response
+{
+  "status": "success",
+  "message": "Đã xử lý thành công 2 tệp tin!"
+}
+```
 
 ---
 
 ## 🤝 Đóng góp
-Dự án được xây dựng với mục đích học tập và triển khai RAG thực tế. Các đóng góp (Pull requests) và báo lỗi (Issues) luôn được chào đón!
+
+Dự án được xây dựng với mục đích học tập và nghiên cứu RAG trong thực tế. Mọi đóng góp (Pull Request) và báo lỗi (Issue) đều được chào đón!
 
 ---
-*Made with ❤️ by Thangp18.*
+
+*Made with ❤️ by [Thangp18](https://github.com/Thangp18)*

@@ -15,6 +15,7 @@
 - [Giới thiệu](#-giới-thiệu)
 - [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
 - [Tính năng nổi bật](#-tính-năng-nổi-bật)
+- [⚡ Semantic Cache](#-semantic-cache)
 - [Công nghệ sử dụng](#️-công-nghệ-sử-dụng)
 - [Cấu trúc dự án](#-cấu-trúc-dự-án)
 - [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
@@ -75,11 +76,25 @@ Dự án áp dụng kiến trúc **Microservices** tiêu chuẩn ngành: phân t
 | 🌐 **Thu thập từ URL** | Tự động scrape và xử lý nội dung từ trang web bất kỳ |
 | 📁 **Upload tài liệu** | Hỗ trợ PDF, DOCX, TXT, PPTX, XLSX và nhiều định dạng khác |
 | 🧠 **Semantic Chunking** | Cắt tài liệu theo ngữ nghĩa, giữ nguyên ngữ cảnh thay vì cắt theo độ dài |
+| ⚡ **Semantic Cache** | Tự động ghi nhớ & tái sử dụng câu trả lời tương đồng về ngữ nghĩa giúp giảm tối đa chi phí/độ trễ LLM |
 | 🔍 **Hybrid Search** | Kết hợp Vector Search (ChromaDB) + Keyword Search (BM25) để tối ưu độ chính xác |
 | 🤖 **ReAct AI Agent** | Agent tự suy luận (LangGraph) quyết định khi nào cần tìm kiếm tài liệu |
 | ⚡ **Streaming Response** | Câu trả lời xuất hiện token-by-token theo thời gian thực |
 | 🔌 **REST API chuẩn** | FastAPI backend với Swagger UI tự động tại `/docs` |
 | 🇻🇳 **Tiếng Việt tối ưu** | Sử dụng model embedding `AITeamVN/Vietnamese_Embedding` chuyên biệt |
+
+---
+
+## ⚡ Semantic Cache
+
+Nhằm tối ưu hóa chi phí API và tăng tốc độ phản hồi tuyệt đối cho các câu hỏi lặp lại hoặc tương đồng, hệ thống tích hợp bộ nhớ đệm ngữ nghĩa **Semantic Cache**:
+
+- **Cơ chế hoạt động:** Thay vì so sánh từ khóa chính xác (Exact Cache), hệ thống mã hóa câu hỏi thành Vector và so sánh khoảng cách L2 với các câu hỏi đã lưu trong Database (`chroma_db` collection `semantic_cache`).
+- **Ngưỡng chấp nhận (Threshold):** 0.2 (có thể cấu hình). Nếu câu hỏi mới tương đồng ngữ nghĩa (khoảng cách vector nhỏ hơn 0.2) với câu hỏi đã có, kết quả sẽ được trả về ngay lập tức **dưới 0.1 giây** mà không cần gọi LLM.
+- **Lợi ích vượt trội:**
+  - Tránh bị giới hạn Request API (HTTP 429) từ Google Gemini.
+  - Tiết kiệm 100% chi phí Token đối với các câu hỏi phổ biến.
+  - Mang lại trải nghiệm phản hồi tức thì (Zero latency).
 
 ---
 
@@ -90,7 +105,7 @@ Dự án áp dụng kiến trúc **Microservices** tiêu chuẩn ngành: phân t
 |---|---|
 | **API Framework** | [FastAPI](https://fastapi.tiangolo.com/) |
 | **AI Orchestration** | [LangChain](https://www.langchain.com/) + [LangGraph](https://langchain-ai.github.io/langgraph/) |
-| **LLM** | Google Gemini (`gemini-2.5-flash-lite`) |
+| **LLM** | Google Gemini (`gemini-1.5-flash`) |
 | **Embeddings** | `AITeamVN/Vietnamese_Embedding` (HuggingFace) |
 | **Vector Database** | [ChromaDB](https://www.trychroma.com/) |
 | **Sparse Retrieval** | BM25 (`rank_bm25`) |
@@ -113,8 +128,9 @@ BuildRAG/
 │   │   ├── main.py                 # Entry point, đăng ký routers
 │   │   ├── schemas.py              # Pydantic models (Request/Response)
 │   │   ├── agent_state.py          # Quản lý vòng đời Agent (singleton cache)
+│   │   ├── semantic_cache.py       # 🧠 Lưu trữ & so khớp ngữ nghĩa câu trả lời
 │   │   └── routers/
-│   │       ├── chat.py             # POST /chat (Streaming Response)
+│   │       ├── chat.py             # POST /chat (Streaming Response + Cache logic)
 │   │       └── ingest.py           # POST /ingest/url | /ingest/local
 │   │
 │   ├── implementation/             # ⚙️ Core Logic

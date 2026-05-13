@@ -9,7 +9,6 @@ from langchain_experimental.text_splitter import SemanticChunker
 
 
 load_dotenv(override=True)
-DATA_PATH = "./data"
 if not os.path.exists("./chroma_db"):
     os.makedirs("./chroma_db", exist_ok=True)
 CHROMA_DIR = "./chroma_db"

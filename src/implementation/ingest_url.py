@@ -3,6 +3,7 @@ import os
 from glob import glob
 from dotenv import load_dotenv
 from langchain_community.document_loaders import WebBaseLoader
+# from langchain_openai import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_classic.retrievers import EnsembleRetriever
@@ -15,6 +16,12 @@ if not os.path.exists("./chroma_db"):
     os.makedirs("./chroma_db", exist_ok=True)
 CHROMA_DIR = "./chroma_db"
 EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
+# EMBEDDING_MODEL = OpenAIEmbeddings(
+#     model="nvidia/llama-nemotron-embed-vl-1b-v2:free",
+#     openai_api_base="https://openrouter.ai/api/v1",
+#     openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+# )
+
 bs4_strainer = bs4.SoupStrainer(class_=("post-title", "post-header", "post-content"))
 
 #Load dữ liệu:

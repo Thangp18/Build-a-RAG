@@ -10,6 +10,12 @@ def page_setup():
     st.header("🤖 Trợ lý AI RAG", divider="rainbow")
 
 def sidebar():
+    # Khởi tạo danh sách URL trong session state
+    if "url_list" not in st.session_state:
+        st.session_state.url_list = [""]
+    if "url_statuses" not in st.session_state:
+        st.session_state.url_statuses = []
+
     with st.sidebar:
         st.title("⚙️ Cấu hình")
         st.header("Nguồn dữ liệu:")
@@ -31,18 +37,75 @@ def sidebar():
                         st.error(f"Không thể kết nối tới API: {e}")
                         
         elif data_source == "🌐 URL":
-            url_input = st.text_input("Nhập danh sách URL (ngăn cách bởi dấu phẩy):")
-            if st.button("Bắt đầu xử lý URL") and url_input:
-                with st.spinner("Backend đang đọc URL..."):
-                    urls = [u.strip() for u in url_input.split(",") if u.strip()]
-                    try:
-                        res = requests.post(f"{API_URL}/ingest/url", json={"urls": urls})
-                        if res.status_code == 200:
-                            st.success(res.json()["message"])
-                        else:
-                            st.error(f"Lỗi: {res.json().get('detail', 'Unknown Error')}")
-                    except Exception as e:
-                        st.error(f"Không thể kết nối tới API: {e}")
+            st.markdown("**Danh sách URL cần xử lý:**")
+
+            # Render từng ô nhập URL với nút xóa
+            for i in range(len(st.session_state.url_list)):
+                col_input, col_del = st.columns([5, 1])
+                with col_input:
+                    st.session_state.url_list[i] = st.text_input(
+                        f"URL {i + 1}",
+                        value=st.session_state.url_list[i],
+                        key=f"url_input_{i}",
+                        placeholder="https://example.com/page",
+                        label_visibility="collapsed",
+                    )
+                with col_del:
+                    if st.button("✕", key=f"del_url_{i}", help="Xóa URL này"):
+                        st.session_state.url_list.pop(i)
+                        # Xóa trạng thái cũ khi danh sách thay đổi
+                        st.session_state.url_statuses = []
+                        st.rerun()
+
+            # Nút thêm URL mới
+            if st.button("➕ Thêm URL"):
+                st.session_state.url_list.append("")
+                st.session_state.url_statuses = []
+                st.rerun()
+
+            st.divider()
+
+            # Nút xử lý tất cả URL
+            if st.button("🚀 Bắt đầu xử lý URL", type="primary"):
+                urls = [u.strip() for u in st.session_state.url_list if u.strip()]
+                if not urls:
+                    st.warning("⚠️ Vui lòng nhập ít nhất một URL.")
+                else:
+                    statuses = []
+                    progress = st.progress(0, text="Đang xử lý...")
+                    for idx, url in enumerate(urls):
+                        progress.progress(
+                            (idx + 1) / len(urls),
+                            text=f"Đang xử lý [{idx + 1}/{len(urls)}]: {url[:50]}..."
+                        )
+                        try:
+                            res = requests.post(
+                                f"{API_URL}/ingest/url",
+                                json={"urls": [url]},
+                                timeout=60
+                            )
+                            if res.status_code == 200:
+                                statuses.append({"url": url, "ok": True, "msg": res.json().get("message", "Thành công")})
+                            else:
+                                statuses.append({"url": url, "ok": False, "msg": res.json().get("detail", "Lỗi không xác định")})
+                        except Exception as e:
+                            statuses.append({"url": url, "ok": False, "msg": str(e)})
+                    progress.empty()
+                    st.session_state.url_statuses = statuses
+                    st.rerun()
+
+            # Hiển thị kết quả xử lý từng URL
+            if st.session_state.url_statuses:
+                st.markdown("**Kết quả xử lý:**")
+                ok_count = sum(1 for s in st.session_state.url_statuses if s["ok"])
+                total = len(st.session_state.url_statuses)
+                st.caption(f"✅ {ok_count}/{total} URL xử lý thành công")
+                for status in st.session_state.url_statuses:
+                    label = status["url"][:40] + "..." if len(status["url"]) > 40 else status["url"]
+                    if status["ok"]:
+                        st.success(f"✅ {label}")
+                    else:
+                        st.error(f"❌ {label}\n{status['msg']}")
 
 def chat_interface():
     # Khởi tạo trạng thái nếu chưa có

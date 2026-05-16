@@ -1,6 +1,7 @@
 import os 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import DirectoryLoader, UnstructuredFileLoader, PyPDFLoader
+# from langchain_openai import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_classic.retrievers import EnsembleRetriever
@@ -14,6 +15,12 @@ if not os.path.exists("./chroma_db"):
 CHROMA_DIR = "./chroma_db"
 
 EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
+# EMBEDDING_MODEL = OpenAIEmbeddings(
+#     model="nvidia/llama-nemotron-embed-vl-1b-v2:free",
+#     openai_api_base="https://openrouter.ai/api/v1",
+#     openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+# )
+
 
 def load_docs(file_paths):
     docs = []
@@ -21,7 +28,6 @@ def load_docs(file_paths):
         ext = os.path.splitext(path)[-1].lower()
         try:
             if ext == ".pdf":
-                # Sử dụng PyPDFLoader thuần Python ổn định hơn trên Windows cho file PDF
                 loader = PyPDFLoader(file_path=path)
             else:
                 loader = UnstructuredFileLoader(

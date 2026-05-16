@@ -1,5 +1,9 @@
 from langchain_core.tools import create_retriever_tool
 from langchain_google_genai import ChatGoogleGenerativeAI
+# from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
+# from langchain_openrouter import ChatOpenRouter
+# from langchain_openai import OpenAIEmbeddings
+# from langchain_groq import ChatGroq
 from langgraph.prebuilt import create_react_agent
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_community.retrievers import BM25Retriever
@@ -15,15 +19,34 @@ load_dotenv(override=True)
 
 CHROMA_DIR = "./chroma_db"
 EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
+# EMBEDDING_MODEL = OpenAIEmbeddings(
+#     model="nvidia/llama-nemotron-embed-vl-1b-v2:free",
+#     openai_api_base="https://openrouter.ai/api/v1",
+#     openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+# )
+
+
 
 # Khởi tạo mô hình ngôn ngữ
-model = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-lite",
+llm = ChatGoogleGenerativeAI(
+    model= "gemini-2.5-flash-lite",
+    api_key= os.getenv("GOOGLE_API_KEY"),
     verbose=True,
     temperature=0.2,
-    google_api_key=os.getenv("GOOGLE_API_KEY"),
     streaming=True
 )
+
+# llm = ChatOpenRouter(
+#     model="meta-llama/llama-3.3-70b-instruct:free",
+#     api_key=os.getenv("OPENROUTER_API_KEY"),
+#     temperature=0,
+#     streaming=True
+# )
+
+# llm = ChatNVIDIA(
+#   model="moonshotai/kimi-k2.5",
+#   api_key=os.getenv("NVIDIA_API_KEY"),
+# )
 
 def setup_tools():
     if not os.path.exists(CHROMA_DIR) or not os.listdir(CHROMA_DIR):
@@ -67,7 +90,7 @@ def setup_tools():
         description="Sử dụng công cụ này để tìm kiếm thông tin trong tài liệu nội bộ. Hãy dùng nó mỗi khi người dùng hỏi về thông tin trong tài liệu đã nạp."
     )
     return [retriever_tool]
-    
+
 def create_agent(llm, tools):
     SYSTEM_PROMPT = (
         "Bạn là trợ lý AI tên là RagTP. Trả lời bằng Tiếng Việt.\n"
@@ -79,3 +102,8 @@ def create_agent(llm, tools):
     # Tạo ReAct Agent
     agent = create_react_agent(llm, tools, prompt=SYSTEM_PROMPT)
     return agent
+
+if __name__ == "__main__":
+    tools = setup_tools()
+    agent = create_agent(llm, tools)
+    print(agent.invoke({"messages": [{"role": "user", "content": "Tôi muốn tìm hiểu về cách sử dụng công cụ local_docs_search"}]}))

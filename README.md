@@ -15,7 +15,7 @@
 - [Giới thiệu](#-giới-thiệu)
 - [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
 - [Tính năng nổi bật](#-tính-năng-nổi-bật)
-- [⚡ Semantic Cache](#-semantic-cache)
+- [Semantic Cache](#-semantic-cache)
 - [Công nghệ sử dụng](#️-công-nghệ-sử-dụng)
 - [Cấu trúc dự án](#-cấu-trúc-dự-án)
 - [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
@@ -85,19 +85,6 @@ Dự án áp dụng kiến trúc **Microservices** tiêu chuẩn ngành: phân t
 
 ---
 
-## ⚡ Semantic Cache
-
-Nhằm tối ưu hóa chi phí API và tăng tốc độ phản hồi tuyệt đối cho các câu hỏi lặp lại hoặc tương đồng, hệ thống tích hợp bộ nhớ đệm ngữ nghĩa **Semantic Cache**:
-
-- **Cơ chế hoạt động:** Thay vì so sánh từ khóa chính xác (Exact Cache), hệ thống mã hóa câu hỏi thành Vector và so sánh khoảng cách L2 với các câu hỏi đã lưu trong Database (`chroma_db` collection `semantic_cache`).
-- **Ngưỡng chấp nhận (Threshold):** 0.2 (có thể cấu hình). Nếu câu hỏi mới tương đồng ngữ nghĩa (khoảng cách vector nhỏ hơn 0.2) với câu hỏi đã có, kết quả sẽ được trả về ngay lập tức **dưới 0.1 giây** mà không cần gọi LLM.
-- **Lợi ích vượt trội:**
-  - Tránh bị giới hạn Request API (HTTP 429) từ Google Gemini.
-  - Tiết kiệm 100% chi phí Token đối với các câu hỏi phổ biến.
-  - Mang lại trải nghiệm phản hồi tức thì (Zero latency).
-
----
-
 ## 🛠️ Công nghệ sử dụng
 
 ### Backend
@@ -105,7 +92,7 @@ Nhằm tối ưu hóa chi phí API và tăng tốc độ phản hồi tuyệt đ
 |---|---|
 | **API Framework** | [FastAPI](https://fastapi.tiangolo.com/) |
 | **AI Orchestration** | [LangChain](https://www.langchain.com/) + [LangGraph](https://langchain-ai.github.io/langgraph/) |
-| **LLM** | Google Gemini (`gemini-1.5-flash`) |
+| **LLM** | Google Gemini (`gemini-2.5-flash-lite`) |
 | **Embeddings** | `AITeamVN/Vietnamese_Embedding` (HuggingFace) |
 | **Vector Database** | [ChromaDB](https://www.trychroma.com/) |
 | **Sparse Retrieval** | BM25 (`rank_bm25`) |

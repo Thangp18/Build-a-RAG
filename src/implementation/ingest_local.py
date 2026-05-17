@@ -1,9 +1,9 @@
 import os 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import DirectoryLoader, UnstructuredFileLoader, PyPDFLoader
-# from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores.chroma import Chroma
+from langchain_chroma import Chroma
 from langchain_classic.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 from langchain_experimental.text_splitter import SemanticChunker
@@ -15,12 +15,6 @@ if not os.path.exists("./chroma_db"):
 CHROMA_DIR = "./chroma_db"
 
 EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
-# EMBEDDING_MODEL = OpenAIEmbeddings(
-#     model="nvidia/llama-nemotron-embed-vl-1b-v2:free",
-#     openai_api_base="https://openrouter.ai/api/v1",
-#     openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-# )
-
 
 def load_docs(file_paths):
     docs = []

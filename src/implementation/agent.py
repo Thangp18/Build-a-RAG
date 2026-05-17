@@ -1,11 +1,9 @@
 from langchain_core.tools import create_retriever_tool
 from langchain_google_genai import ChatGoogleGenerativeAI
-# from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
-# from langchain_openrouter import ChatOpenRouter
-# from langchain_openai import OpenAIEmbeddings
-# from langchain_groq import ChatGroq
+from langchain_openrouter import ChatOpenRouter
+from langchain_openai import OpenAIEmbeddings
 from langgraph.prebuilt import create_react_agent
-from langchain_community.vectorstores.chroma import Chroma
+from langchain_chroma import Chroma
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers import EnsembleRetriever
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -19,34 +17,17 @@ load_dotenv(override=True)
 
 CHROMA_DIR = "./chroma_db"
 EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
-# EMBEDDING_MODEL = OpenAIEmbeddings(
-#     model="nvidia/llama-nemotron-embed-vl-1b-v2:free",
-#     openai_api_base="https://openrouter.ai/api/v1",
-#     openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-# )
 
 
 
 # Khởi tạo mô hình ngôn ngữ
-llm = ChatGoogleGenerativeAI(
-    model= "gemini-2.5-flash-lite",
-    api_key= os.getenv("GOOGLE_API_KEY"),
-    verbose=True,
-    temperature=0.2,
+llm = ChatOpenRouter(
+    model="openrouter/owl-alpha",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    temperature=0,
     streaming=True
 )
 
-# llm = ChatOpenRouter(
-#     model="meta-llama/llama-3.3-70b-instruct:free",
-#     api_key=os.getenv("OPENROUTER_API_KEY"),
-#     temperature=0,
-#     streaming=True
-# )
-
-# llm = ChatNVIDIA(
-#   model="moonshotai/kimi-k2.5",
-#   api_key=os.getenv("NVIDIA_API_KEY"),
-# )
 
 def setup_tools():
     if not os.path.exists(CHROMA_DIR) or not os.listdir(CHROMA_DIR):

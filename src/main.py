@@ -24,7 +24,7 @@ def sidebar():
         if data_source == "📁 File từ thiết bị":
             uploaded_files = st.file_uploader("Chọn file:", accept_multiple_files=True)
             if st.button("Bắt đầu xử lý File") and uploaded_files:
-                with st.spinner("Backend đang xử lý file..."):
+                with st.spinner("Đang xử lý file..."):
                     # Gửi nhiều file qua form-data
                     files_payload = [("files", (f.name, f.getvalue(), f.type)) for f in uploaded_files]
                     try:

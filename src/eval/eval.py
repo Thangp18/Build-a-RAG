@@ -2,12 +2,19 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from ragas import evaluate
-from ragas.metrics import faithfulness
+# Use ragas.metrics (NOT ragas.metrics.collections) — collections only supports InstructorLLM (OpenAI-style),
+# while standard ragas.metrics supports any LangChain LLM including Gemini.
+from ragas.metrics import (
+    Faithfulness,        # Độ trung thực – câu trả lời có phù hợp với context không?
+    AnswerRelevancy,     # Độ liên quan – câu trả lời có đúng trọng tâm câu hỏi không?
+    ContextPrecision,    # Độ chính xác retrieval – context có xếp hạng phần liên quan lên đầu không?
+    ContextRecall,       # Độ bao phủ retrieval – context có chứa đủ thông tin để trả lời không?
+    SemanticSimilarity,  # Độ tương đồng ngữ nghĩa – câu trả lời có gần với ground truth không?
+)
 from datasets import Dataset
-# from langchain_openrouter import ChatOpenRouter
-# from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
+import math
+from langchain_openai import ChatOpenAI 
+from langchain_huggingface import HuggingFaceEmbeddings
 from src.api.agent_state import get_agent
 from dotenv import load_dotenv
 
@@ -98,34 +105,85 @@ def eval():
         "ground_truth": ground_truths
     })
 
-    #call llm 
-    # llm = ChatNVIDIA(model="moonshotai/kimi-k2.6", api_key= os.getenv("NVIDIA_API_KEY"))
-    llm = ChatGoogleGenerativeAI(
-        model= "gemini-2.5-flash-lite",
-        api_key= os.getenv("GOOGLE_API_KEY")
+    llm = ChatOpenAI(
+        model="openai/gpt-oss-120b:free",
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        temperature=0,
     )
-    # llm = ChatGroq(
-    #     model= "llama-3.1-8b-instant",
-    #     api_key= os.getenv("GROQ_API_KEY")
-    # )
+
+    EMBEDDING_MODEL = HuggingFaceEmbeddings(model="AITeamVN/Vietnamese_Embedding")
+
+    # Định nghĩa bộ metrics đánh giá toàn diện (instantiate as objects)
+    # Newer RAGAS versions require llm/embeddings to be passed at metric construction time
+    metrics = [
+        Faithfulness(),       # Độ trung thực: câu trả lời có phù hợp với context không?
+        AnswerRelevancy(),    # Độ liên quan: câu trả lời có đúng trọng tâm câu hỏi không?
+        ContextPrecision(),   # Độ chính xác retrieval: context có xếp hạng phần liên quan lên đầu không?
+        ContextRecall(),      # Độ bao phủ retrieval: context có chứa đủ thông tin để trả lời không?
+        SemanticSimilarity(), # Độ tương đồng ngữ nghĩa: câu trả lời có gần với ground truth không?
+    ]
+
+    print(f"\n📊 Đang đánh giá với {len(metrics)} metrics: {[m.name for m in metrics]}")
+    print("⏳ Quá trình này có thể mất vài phút...\n")
 
     #eval
     result = evaluate(
         dataset=dataset,
-        metrics=[faithfulness],
-        llm=llm
+        metrics=metrics,
+        llm=llm,
+        embeddings=EMBEDDING_MODEL
     )
 
     # In và xuất báo cáo
-    print("\n" + "="*40)
+    print("\n" + "="*60)
     print("🏆 KẾT QUẢ ĐÁNH GIÁ CUỐI CÙNG")
-    print("="*40)
-    print(result)
-    
-    # Lưu vào file Excel/CSV để làm tài liệu đính kèm CV
+    print("="*60)
+
+    # Tóm tắt từng metric theo dạng bảng với progress bar
+    metric_descriptions = {
+        "faithfulness":      "Độ trung thực (tránh hallucination)",
+        "answer_relevancy":  "Độ liên quan của câu trả lời",
+        "context_precision": "Độ chính xác của retrieval",
+        "context_recall":    "Độ bao phủ của retrieval",
+        "answer_similarity": "Độ tương đồng với ground truth",
+    }
+    result_dict = result.to_pandas().mean(numeric_only=True).to_dict()
+
+    print(f"\n{'Metric':<25} {'Điểm':>6}   {'Trực quan':<22}  Ý nghĩa")
+    print("-" * 85)
+    valid_scores = []
+    for metric_name, score in result_dict.items():
+        desc = metric_descriptions.get(metric_name, "")
+        if math.isnan(score):
+            print(f"{metric_name:<25} {'N/A':>6}   [{'?'*20}]  {desc} ⚠️ Lỗi khi tính")
+        else:
+            bar_len = int(score * 20)
+            bar = "█" * bar_len + "░" * (20 - bar_len)
+            print(f"{metric_name:<25} {score:>6.4f}   [{bar}]  {desc}")
+            valid_scores.append(score)
+    print("-" * 85)
+
+    avg_score = sum(valid_scores) / len(valid_scores) if valid_scores else 0
+    print(f"\n🎯 Điểm trung bình tổng hợp: {avg_score:.4f}")
+
+    # Đánh giá mức độ
+    if avg_score >= 0.8:
+        grade = "✅ Xuất sắc – Pipeline hoạt động tốt"
+    elif avg_score >= 0.6:
+        grade = "🟡 Trung bình khá – Có thể cải thiện thêm"
+    elif avg_score >= 0.4:
+        grade = "🟠 Cần cải thiện – Xem xét lại chunking / retrieval"
+    else:
+        grade = "🔴 Kém – Cần xem xét lại toàn bộ pipeline"
+    print(f"📋 Xếp loại hệ thống: {grade}")
+    print("=" * 60)
+
+    # Lưu vào file CSV để làm tài liệu đính kèm CV
     df = result.to_pandas()
     output_path = "src/eval/result/final_report.csv"
     df.to_csv(output_path, index=False, encoding="utf-8-sig")
     print(f"\n💾 Đã xuất báo cáo chi tiết ra file: {output_path}")
+
 if __name__ == "__main__":
     eval()

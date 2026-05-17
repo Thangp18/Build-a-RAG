@@ -17,6 +17,7 @@
 - [Tính năng nổi bật](#-tính-năng-nổi-bật)
 - [Semantic Cache](#-semantic-cache)
 - [Công nghệ sử dụng](#️-công-nghệ-sử-dụng)
+- [Đánh giá mô hình (Evaluation)](#-đánh-giá-mô-hình-evaluation)
 - [Cấu trúc dự án](#-cấu-trúc-dự-án)
 - [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
 - [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)
@@ -103,6 +104,26 @@ Dự án áp dụng kiến trúc **Microservices** tiêu chuẩn ngành: phân t
 |---|---|
 | **UI Framework** | [Streamlit](https://streamlit.io/) |
 | **HTTP Client** | `requests` (với streaming support) |
+
+---
+
+## 📊 Đánh giá mô hình (Evaluation)
+
+Hệ thống RAG được đánh giá bằng công cụ **RAGAS** với bộ dữ liệu kiểm thử thực tế. Kết quả cho thấy hệ thống hoạt động ổn định và **đạt độ chính xác rất cao ở khả năng trích xuất thông tin trung thực**.
+
+**🎯 Điểm trung bình tổng hợp: 0.7579 (~75.8%)**
+
+Dưới đây là chi tiết từng chỉ số (được tách riêng):
+
+| Chỉ số đánh giá (Metric) | Điểm số | Đánh giá | Ý nghĩa |
+| :--- | :---: | :--- | :--- |
+| **Faithfulness** | **0.8782** | 🟢 **Rất Cao** | Tính trung thực của câu trả lời. Hệ thống gần như không bị "ảo giác" (hallucination) và bám sát tuyệt đối vào ngữ cảnh được cung cấp. |
+| **Context Precision** | **0.8333** | 🟢 **Cao** | Độ chính xác của ngữ cảnh được truy xuất. Các đoạn văn bản hệ thống tìm được có mức độ liên quan rất cao đến câu hỏi. |
+| **Context Recall** | **0.7500** | 🟡 Khá | Khả năng thu hồi ngữ cảnh. Hệ thống truy xuất được phần lớn (75%) các thông tin cần thiết để giải quyết câu hỏi. |
+| **Answer Relevancy** | **0.6951** | 🟡 Khá | Độ liên quan của câu trả lời đối với câu hỏi gốc, không trả lời lan man. |
+| **Semantic Similarity** | **0.6329** | 🟠 Trung bình | Độ tương đồng về ngữ nghĩa so với câu trả lời mẫu (reference). |
+
+> 💡 **Kết luận:** Hệ thống thể hiện sức mạnh vượt trội ở chỉ số **Faithfulness (87.8%)** và **Context Precision (83.3%)**, chứng tỏ khả năng tìm kiếm chính xác văn bản liên quan và tổng hợp câu trả lời dựa trên sự thật (fact-based) rất đáng tin cậy.
 
 ---
 
@@ -270,12 +291,6 @@ files: [file1.pdf, file2.docx, ...]
   "message": "Đã xử lý thành công 2 tệp tin!"
 }
 ```
-
----
-
-## 🤝 Đóng góp
-
-Dự án được xây dựng với mục đích học tập và nghiên cứu RAG trong thực tế. Mọi đóng góp (Pull Request) và báo lỗi (Issue) đều được chào đón!
 
 ---
 

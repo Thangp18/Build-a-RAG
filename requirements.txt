@@ -1,15 +1,37 @@
+# ==============================================================================
+# 🤖 BuildRAG Project - Dependencies Configuration (Hệ thống AI RAG & Đánh giá)
+# ==============================================================================
+
+# --- 1. Giao diện & Gọi API (Frontend & Client) ---
 streamlit>=1.28.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# --- 2. Khung dịch vụ Backend (API Service & Core) ---
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-multipart>=0.0.9     # Cần thiết để xử lý upload file qua Form-Data trong FastAPI
+pydantic>=2.0.0
+
+# --- 3. Hệ sinh thái LangChain & LangGraph (Orchestration & LLM) ---
 langchain>=0.1.0
 langchain-core>=0.1.0
-langchain-google-genai>=0.0.1
 langchain-community>=0.0.9
+langchain-google-genai>=0.0.1
 langchain-huggingface>=0.0.1
 langchain-experimental>=0.0.1
+langchain-openrouter>=0.1.0  # Dùng cho ChatOpenRouter để kết nối OpenRouter API
+langchain-openai>=0.1.0      # Dùng để khởi tạo ChatOpenAI trong RAGAS Eval
+langchain-classic>=0.1.0     # Cung cấp EnsembleRetriever, ContextualCompressionRetriever
 langgraph>=0.1.0
-sentence-transformers>=2.2.0
+
+# --- 4. Cơ sở dữ liệu Vector & Mô hình Embeddings (Vector DB & Embeddings) ---
 chromadb>=0.4.0
-python-dotenv>=1.0.0
-requests>=2.31.0
+langchain-chroma>=0.1.0     # Tương tác với ChromaDB bằng LangChain
+sentence-transformers>=2.2.0
+flashrank>=0.2.0            # Cần thiết cho FlashrankRerank trong phần Reranking nâng cao
+
+# --- 5. Trích xuất & Xử lý văn bản (Data Ingestion & Text Parsers) ---
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
 unstructured>=0.10.0
@@ -19,5 +41,8 @@ pypdf>=3.17.0
 python-docx>=0.8.11
 python-pptx>=0.6.21
 openpyxl>=3.1.0
-fastapi
-uvicorn
+
+# --- 6. Hệ thống đánh giá hiệu suất RAG (RAGAS Evaluation & Data Analysis) ---
+ragas>=0.1.0                 # Thư viện đánh giá chất lượng RAGAS
+datasets>=2.15.0             # Quản lý tập dữ liệu đánh giá
+pandas>=2.0.0                # Xử lý dữ liệu bảng và xuất báo cáo CSV
